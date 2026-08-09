@@ -1,0 +1,44 @@
+-- Đặt script này trong ServerScriptService
+
+-- Danh sách tên những người được phép lấy F3X (Thay bằng tên Roblox của bạn)
+local adminList = {
+    "Ten_Roblox_Cua_Ban",
+    "Mot_Nguoi_Ban_Khac"
+} 
+
+local command = "!f3x" -- Lệnh chat để lấy tool
+
+game.Players.PlayerAdded:Connect(function(player)
+    player.Chatted:Connect(function(message)
+        -- Kiểm tra xem tin nhắn có khớp với lệnh không (không phân biệt chữ hoa/thường)
+        if message:lower() == command then
+            
+            -- Kiểm tra quyền Admin
+            local isAdmin = false
+            for _, adminName in ipairs(adminList) do
+                if player.Name == adminName then
+                    isAdmin = true
+                    break
+                end
+            end
+            
+            -- Nếu là Admin, tiến hành cấp F3X
+            if isAdmin then
+                local f3xTool = game.ServerStorage:FindFirstChild("F3X")
+                
+                if f3xTool then
+                    -- Tránh trường hợp người chơi spam lệnh lấy nhiều tool
+                    if not player.Backpack:FindFirstChild("F3X") and not player.Character:FindFirstChild("F3X") then
+                        local clonedTool = f3xTool:Clone()
+                        clonedTool.Parent = player.Backpack
+                        print("Đã cấp F3X cho: " .. player.Name)
+                    end
+                else
+                    warn("Lỗi: Không tìm thấy tool tên 'F3X' trong ServerStorage!")
+                end
+            end
+            
+        end
+    end)
+end)
+
