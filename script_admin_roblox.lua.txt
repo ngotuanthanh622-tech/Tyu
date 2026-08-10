@@ -1,0 +1,94 @@
+Tệp script admin Roblox đã được chuẩn bị sẵn
+
+Bạn có thể tải tệp dưới đây hoặc sao chép mã trực tiếp:
+
+    -- Script admin cơ bản cho Roblox
+    local Players = game:GetService("Players")
+    local ServerStorage = game:GetService("ServerStorage")
+
+    -- Danh sách người chơi được phép sử dụng lệnh admin (thay bằng ID người chơi của bạn)
+    local AdminIDs = {123456789}
+
+    -- Kiểm tra quyền admin
+    local function isAdmin(player)
+        for _, id in ipairs(AdminIDs) do
+            if player.UserId == id then
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Xử lý lệnh chat
+    local function onPlayerChatted(player, message)
+        if not isAdmin(player) then return end
+        
+        local args = string.split(message:lower(), " ")
+        local command = args[1]
+
+        -- Lệnh kick người chơi
+        if command == "/kick" and #args >= 2 then
+            local targetName = table.concat(args, " ", 2)
+            for _, target in ipairs(Players:GetPlayers()) do
+                if target.Name:lower() == targetName:lower() then
+                    target:Kick("Bạn đã bị kick bởi admin")
+                    player:SendChatMessage(string.format("Đã kick %s", target.Name))
+                    return
+                end
+            end
+            player:SendChatMessage("Không tìm thấy người chơi")
+        end
+        
+        -- Lệnh teleport tất cả người chơi đến vị trí của bạn
+        if command == "/tptome" then
+            local character = player.Character
+            if not character then return end
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if not rootPart then return end
+            
+            for _, target in ipairs(Players:GetPlayers()) do
+                if target ~= player and target.Character then
+                    local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                    if targetRoot then
+                        targetRoot.CFrame = rootPart.CFrame + Vector3.new(0, 3, 0)
+                    end
+                end
+            end
+            player:SendChatMessage("Đã teleport tất cả người chơi đến bạn")
+        end
+        
+        -- Lệnh đưa vật phẩm cho tất cả người chơi
+        if command == "/giveitem" and #args >= 2 then
+            local itemName = table.concat(args, " ", 2)
+            local item = ServerStorage:FindFirstChild(itemName)
+            if not item then
+                player:SendChatMessage("Không tìm thấy vật phẩm")
+                return
+            end
+            
+            for _, target in ipairs(Players:GetPlayers()) do
+                local clonedItem = item:Clone()
+                clonedItem.Parent = target.Backpack
+            end
+            player:SendChatMessage(string.format("Đã đưa %s cho tất cả người chơi", itemName))
+        end
+    end
+
+    -- Gắn sự kiện cho tất cả người chơi mới
+    Players.PlayerAdded:Connect(function(player)
+        player.Chatted:Connect(function(message)
+            onPlayerChatted(player, message)
+        end)
+    end)
+
+------------------------------------------------------------------------
+
+Cách tải tệp
+
+1.  Sao chép toàn bộ mã trên
+2.  Mở Notepad hoặc trình soạn thảo văn bản khác
+3.  Dán mã vào và lưu với tên admin_script.lua (đảm bảo phần mở rộng là
+    .lua)
+
+Bạn có muốn mình hướng dẫn cách cài đặt script này vào game Roblox
+không?
