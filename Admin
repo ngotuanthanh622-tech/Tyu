@@ -1,0 +1,79 @@
+
+-- Script admin cơ bản cho Roblox
+local Players = game:GetService("Players")
+local ServerStorage = game:GetService("ServerStorage")
+
+-- Danh sách người chơi được phép sử dụng lệnh admin (thay bằng ID người chơi của bạn)
+local AdminIDs = {123456789}
+
+-- Kiểm tra quyền admin
+local function isAdmin(player)
+    for _, id in ipairs(AdminIDs) do
+        if player.UserId == id then
+            return true
+        end
+    end
+    return false
+end
+
+-- Xử lý lệnh chat
+local function onPlayerChatted(player, message)
+    if not isAdmin(player) then return end
+    
+    local args = string.split(message:lower(), " ")
+    local command = args
+    
+    -- Lệnh kick người chơi
+    if command == "/kick" and #args >= 2 then
+        local targetName = args
+        for _, target in ipairs(Players:GetPlayers()) do
+            if target.Name:lower() == targetName:lower() then
+                target:Kick("Bạn đã bị kick bởi admin")
+                player:SendChatMessage($"Đã kick {target.Name}")
+                return
+            end
+        end
+        player:SendChatMessage("Không tìm thấy người chơi")
+    end
+    
+    -- Lệnh teleport tất cả người chơi đến vị trí của bạn
+    if command == "/tptome" then
+        local character = player.Character
+        if not character then return end
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        if not rootPart then return end
+        
+        for _, target in ipairs(Players:GetPlayers()) do
+            if target ~= player and target.Character then
+                local targetRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                if targetRoot then
+                    targetRoot.CFrame = rootPart.CFrame + Vector3.new(0, 3, 0)
+                end
+            end
+        end
+        player:SendChatMessage("Đã teleport tất cả người chơi đến bạn")
+    end
+    
+    -- Lệnh đưa vật phẩm cho tất cả người chơi
+    if command == "/giveitem" and #args >= 2 then
+        local itemName = args
+        local item = ServerStorage:FindFirstChild(itemName)
+        if not item then
+            player:SendChatMessage("Không tìm thấy vật phẩm")
+            return
+        end
+        
+        for _, target in ipairs(Players:GetPlayers()) do
+            local clonedItem = item:Clone()
+            clonedItem.Parent = target.Backpack
+        end
+        player:SendChatMessage($"Đã đưa {itemName} cho tất cả người chơi")
+    end
+end
+
+-- Gắn sự kiện cho tất cả người chơi mới
+Players.PlayerAdded:Connect(function(player)
+    player.Chatted:Connect(function(message)
+        onPlayerChatted(player, message)
+    end)
+end)
