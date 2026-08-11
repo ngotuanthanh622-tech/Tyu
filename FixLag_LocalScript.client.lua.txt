@@ -1,0 +1,75 @@
+--!strict
+-- LocalScript: Đặt tại StarterPlayerScripts để tự động chạy khi vào game
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+-- 1. Tối ưu hóa Hệ thống Ánh sáng (Lighting)
+local function optimizeLighting()
+	Lighting.GlobalShadows = false
+	Lighting.FogEnd = 9e9 -- Xóa sương mù
+	Lighting.Technology = Enum.Technology.Compatibility -- Đưa về công nghệ chiếu sáng nhẹ nhất
+
+	-- Xóa các hiệu ứng hậu kỳ nặng (Post-processing Effects)
+	for _, effect in ipairs(Lighting:GetChildren()) do
+		if effect:IsA("PostEffect") or effect:IsA("Atmosphere") or effect:IsA("Sky") then
+			effect.Enabled = false
+		end
+	end
+end
+
+-- 2. Tối ưu hóa Vật thể trong Game (Workspace)
+local function optimizePart(obj: Instance)
+	-- Hạ chi tiết Mesh/Part
+	if obj:IsA("BasePart") then
+		obj.Material = Enum.Material.SmoothPlastic
+		obj.Reflectance = 0
+		obj.CastShadow = false
+	-- Tắt các hiệu ứng hạt, khói, lửa
+	elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
+		obj.Enabled = false
+	-- Giảm chất lượng hoặc ẩn các Decal/Texture không cần thiết
+	elseif obj:IsA("Decal") or obj:IsA("Texture") then
+		obj.Transparency = 1
+	end
+end
+
+-- 3. Tối ưu Địa hình (Terrain)
+local function optimizeTerrain()
+	local terrain = Workspace:FindFirstChildOfClass("Terrain")
+	if terrain then
+		terrain.WaterWaveSize = 0
+		terrain.WaterWaveSpeed = 0
+		terrain.WaterReflectance = 0
+		terrain.WaterTransparency = 0
+		terrain.Decoration = false -- Tắt cỏ động 3D
+	end
+end
+
+-- 4. Thực thi tối ưu toàn bộ Map
+local function applyLagFix()
+	optimizeLighting()
+	optimizeTerrain()
+
+	-- Quét toàn bộ vật thể hiện có
+	for _, desc in ipairs(Workspace:GetDescendants()) do
+		-- Bỏ qua nhân vật của người chơi để tránh làm xấu nhân vật
+		if not desc:IsDescendantOf(LocalPlayer.Character or workspace) then
+			optimizePart(desc)
+		end
+	end
+
+	-- Lắng nghe các vật thể mới được spawn ra sau đó để tiếp tục tối ưu
+	Workspace.DescendantAdded:Connect(function(newObj)
+		task.wait() -- Đợi vật thể load xong
+		if not newObj:IsDescendantOf(LocalPlayer.Character or workspace) then
+			optimizePart(newObj)
+		end
+	end)
+end
+
+-- Khởi chạy Fix Lag
+applyLagFix()
+print("Đã tối ưu hóa hiệu suất (Fix Lag) cho Client thành công!")
